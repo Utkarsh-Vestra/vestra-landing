@@ -1430,9 +1430,10 @@
       });
 
       function startWipe() {
-        afterVideo.play();
+        const p = afterVideo.play();
         afterVideo.classList.add('wipe-in');
         setTimeout(showAfterEffects, 650);
+        if (p !== undefined) p.catch(() => {});
       }
 
       function showAfterEffects() {
@@ -1485,7 +1486,7 @@
 
         setTimeout(() => {
           fadeOverlay.classList.remove('dark');
-          safePlay(beforeVideo);
+          beforeVideo.play().catch(() => {});
         }, 200);
       }
 
@@ -1498,6 +1499,9 @@
         sequenceStarted = true;
         // Hide tap overlay
         if (tapOverlay) tapOverlay.classList.add('hidden');
+        // Unlock after video NOW while we have a user gesture — iOS requires this
+        // so the later programmatic play() in startWipe() is allowed
+        afterVideo.play().then(() => { afterVideo.pause(); afterVideo.currentTime = 0; }).catch(() => {});
         beforeVideo.play().catch(() => {});
       }
 
@@ -1505,9 +1509,11 @@
       const autoplayAttempt = beforeVideo.play();
       if (autoplayAttempt !== undefined) {
         autoplayAttempt.then(() => {
-          // Autoplay succeeded — hide tap overlay
+          // Autoplay succeeded — hide tap overlay and unlock after video
           sequenceStarted = true;
           if (tapOverlay) tapOverlay.classList.add('hidden');
+          // Unlock after video so iOS allows programmatic play() later
+          afterVideo.play().then(() => { afterVideo.pause(); afterVideo.currentTime = 0; }).catch(() => {});
         }).catch(() => {
           // Autoplay blocked — show tap overlay
           if (tapOverlay) tapOverlay.style.display = 'flex';
