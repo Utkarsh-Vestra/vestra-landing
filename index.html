@@ -235,7 +235,7 @@
       overflow: hidden;
       position: relative;
       /* Warm beige to match the photo background while images load */
-      background: #D4C4A8;
+      background: #111;
     }
 
     /* ─── VIDEOS ─────────────────────────────────────────────────────────── */
@@ -501,6 +501,35 @@
     .hero-outro-screen.active .hero-outro-logo,
     .hero-outro-screen.active .hero-outro-tagline { opacity: 1; transform: translateY(0); }
     .hero-outro-screen.active .hero-outro-rule    { opacity: 1; transform: scaleX(1); }
+
+    /* ─── TAP TO START OVERLAY ──────────────────────────────────────────── */
+    .hero-tap-overlay {
+      position: absolute; inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.18);
+      cursor: pointer;
+      transition: opacity 0.4s ease;
+    }
+    .hero-tap-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .hero-tap-icon {
+      width: 52px; height: 52px;
+      background: rgba(255,255,255,0.92);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .hero-tap-icon svg {
+      width: 20px; height: 20px;
+      margin-left: 3px;
+    }
 
     /* ─── BLACK FADE OVERLAY ─────────────────────────────────────────────── */
     .hero-fade-overlay {
@@ -1055,10 +1084,10 @@
                 <div class="phone-screen" id="heroPhoneScreen">
 
           <!-- Before video -->
-          <video class="phone-video" id="heroBeforeVideo" src="before.mp4" muted playsinline></video>
+          <video class="phone-video" id="heroBeforeVideo" src="before.mp4" autoplay muted playsinline preload="auto"></video>
 
           <!-- After video (wipes in) -->
-          <video class="phone-video" id="heroAfterVideo" src="after.mp4" muted playsinline></video>
+          <video class="phone-video" id="heroAfterVideo" src="after.mp4" muted playsinline preload="auto"></video>
 
           <!-- Shimmer -->
           <div class="hero-shimmer-layer" id="heroShimmerLayer"></div>
@@ -1127,6 +1156,15 @@
             <p class="hero-outro-logo">Vestra</p>
             <div class="hero-outro-rule"></div>
             <p class="hero-outro-tagline">Wear it before you own it</p>
+          </div>
+
+          <!-- Tap to start overlay (shown when autoplay blocked) -->
+          <div class="hero-tap-overlay" id="heroTapOverlay">
+            <div class="hero-tap-icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M6 4l14 8-14 8V4z" fill="#1A1A1A"/>
+              </svg>
+            </div>
           </div>
 
           <!-- Fade overlay -->
@@ -1451,41 +1489,46 @@
         }, 200);
       }
 
-      // ── SAFE PLAY: handles autoplay policy in Chrome/Safari ────────────────
-      function safePlay(video) {
-        const p = video.play();
-        if (p !== undefined) p.catch(() => {});
-      }
-
-      // ── START: play when scrolled into view (fixes autoplay block) ─────────
+      // ── VIDEO PLAYBACK — cross-browser autoplay handler ────────────────────
+      const tapOverlay = document.getElementById('heroTapOverlay');
       let sequenceStarted = false;
+
       function startSequence() {
         if (sequenceStarted) return;
         sequenceStarted = true;
-        safePlay(beforeVideo);
+        // Hide tap overlay
+        if (tapOverlay) tapOverlay.classList.add('hidden');
+        beforeVideo.play().catch(() => {});
       }
 
-      // Try immediately (works if user already interacted with page)
-      safePlay(beforeVideo);
-
-      // Fallback: start when phone scrolls into view
-      const phoneEl = document.getElementById('heroPhoneScreen');
-      if (phoneEl && 'IntersectionObserver' in window) {
-        const io = new IntersectionObserver((entries) => {
-          if (entries[0].isIntersecting) {
-            startSequence();
-            io.disconnect();
-          }
-        }, { threshold: 0.3 });
-        io.observe(phoneEl);
+      // Try autoplay immediately
+      const autoplayAttempt = beforeVideo.play();
+      if (autoplayAttempt !== undefined) {
+        autoplayAttempt.then(() => {
+          // Autoplay succeeded — hide tap overlay
+          sequenceStarted = true;
+          if (tapOverlay) tapOverlay.classList.add('hidden');
+        }).catch(() => {
+          // Autoplay blocked — show tap overlay
+          if (tapOverlay) tapOverlay.style.display = 'flex';
+        });
       }
 
-      // Last resort: start on first user interaction anywhere on page
-      ['click','touchstart','keydown','scroll'].forEach(evt => {
-        document.addEventListener(evt, function handler() {
+      // Tap overlay click starts video
+      if (tapOverlay) {
+        tapOverlay.addEventListener('click', startSequence);
+        tapOverlay.addEventListener('touchend', function(e) {
+          e.preventDefault();
           startSequence();
+        });
+      }
+
+      // Also start on any scroll/interaction as fallback
+      ['touchstart', 'click'].forEach(evt => {
+        document.addEventListener(evt, function handler() {
+          if (!sequenceStarted) startSequence();
           document.removeEventListener(evt, handler);
-        }, { once: true, passive: true });
+        }, { once: true, passive: evt === 'touchstart' });
       });
 
     })();
