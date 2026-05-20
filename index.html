@@ -1039,12 +1039,10 @@
       .phone-mockup { width: 238px; height: 488px; border-radius: 42px; }
       footer { flex-direction: column; text-align: center; align-items: center; }
       .ig-strip { flex-direction: column; text-align: center; gap: 14px; }
-      .opp-stats-row { flex-direction: column; }
       .hiw-steps { flex-direction: column; gap: 40px; }
       .hiw-connector { display: none; }
-      .founder-grid { grid-template-columns: 1fr; }
-      .founder-photo-wrap { width: 100%; height: 260px; }
     }
+
 
     /* ── MARKET OPPORTUNITY ─────────────────────────────────────────────── */
     #opportunity { background: var(--bg-primary); }
@@ -1245,6 +1243,16 @@
     }
 
     .founder-bio strong { color: var(--text); font-weight: 700; }
+
+    @media (max-width: 760px) {
+      .opp-stats-row { flex-wrap: wrap; justify-content: center; }
+      .opp-stat-card { min-width: 140px; flex: 0 0 calc(50% - 10px); }
+      .founder-grid { grid-template-columns: 1fr; gap: 24px; }
+      .founder-photo-wrap { width: 140px; height: 170px; margin: 0 auto; border-radius: 12px; }
+      .founder-name { font-size: 1.4rem; margin-bottom: 12px; }
+      .founder-bio { font-size: 0.9rem; }
+      #founder { text-align: center; }
+    }
   </style>
 </head>
 <body>
